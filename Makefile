@@ -1,4 +1,4 @@
-.PHONY: setup activate mcp-server fetch-data run run-no-mcp docker-build docker-run docker-interactive clean help debug debug-embeddings debug-env debug-vectordb debug-graph debug-ingest ingest test-retrieval test-components debug-verbose clean-vectordb clean-all
+.PHONY: setup activate mcp-server fetch-data run run-no-mcp docker-build docker-interactive clean help debug debug-embeddings debug-env debug-vectordb debug-graph debug-ingest ingest test-retrieval test-components debug-verbose clean-vectordb clean-all
 
 # Default target
 help:
@@ -13,8 +13,7 @@ help:
 	@echo "  make clean-all       - Full cleanup including vector database"
 	@echo ""
 	@echo "Docker targets:"
-	@echo "  make docker-build    - Build Docker image"
-	@echo "  make docker-run      - Run Docker container (non-interactive)"
+	@echo "  make docker-build    - Build Docker image (includes NASA docs and vector DB)"
 	@echo "  make docker-interactive - Run Docker container (interactive Q&A)"
 	@echo ""
 	@echo "Debug targets:"
@@ -67,25 +66,21 @@ run-no-mcp:
 
 # === DOCKER TARGETS ===
 
-# Build Docker image
+# Build Docker image (includes downloading docs and creating vector database)
 docker-build:
-	@echo "🐳 Building Docker image..."
-	docker build -t nasa-qa-demo .
-	@echo "✅ Docker image built successfully"
-
-# Run Docker container (non-interactive, for testing)
-docker-run:
-	@echo "🐳 Running Docker container (non-interactive)..."
-	@echo "This will download data, ingest documents, and exit."
-	docker run --rm --env-file .env nasa-qa-demo
+	@echo "🐳 Building Docker image with NASA documents and vector database..."
+	@echo "📥 This will download NASA PDFs and create the vector database during build..."
+	@echo "⏱️  Build may take a few minutes due to document processing..."
+	docker-compose build
+	@echo "✅ Docker image built successfully - ready for interactive Q&A!"
 
 # Run Docker container (interactive Q&A mode)
 docker-interactive:
-	@echo "🐳 Starting interactive NASA Q&A system in Docker..."
-	@echo "💡 You can now ask questions about NASA documents!"
-	@echo "💡 Type 'quit', 'exit', or 'q' to stop, or press Ctrl+C"
+	@echo "🐳 Starting interactive NASA Q&A system..."
+	@echo "🎯 Starting interactive Q&A session..."
+	@echo "📝 Type 'quit', 'exit', or 'q' to stop"
 	@echo ""
-	docker run -it --rm --env-file .env nasa-qa-demo
+	docker-compose run --rm demo
 
 # === DEBUG TARGETS ===
 
