@@ -1,10 +1,10 @@
-.PHONY: setup activate mcp-server run run-no-mcp clean help debug debug-embeddings debug-env debug-vectordb debug-graph debug-ingest test-retrieval test-components debug-verbose clean-vectordb clean-all
+.PHONY: setup activate mcp-server run run-no-mcp clean help debug debug-embeddings debug-env debug-vectordb debug-graph debug-ingest ingest test-retrieval test-components debug-verbose clean-vectordb clean-all
 
 # Default target
 help:
 	@echo "Available targets:"
 	@echo "  make setup           - Set up the project (run setup.sh)"
-	@echo "  make mcp-server      - Start the MCP filesystem server"
+	@echo "  make ingest          - Process PDF documents into vector database"
 	@echo "  make run             - Run the main application"
 	@echo "  make run-no-mcp      - Run without MCP (avoids connection errors)"
 	@echo "  make clean           - Clean up temporary files and directories"
@@ -28,10 +28,16 @@ setup:
 	chmod +x setup.sh
 	./setup.sh
 
-# Start the MCP filesystem server
-mcp-server:
-	@echo "Starting MCP filesystem server..."
-	cd servers/src/filesystem && npm start
+# Process PDF documents into vector database
+ingest:
+	@echo "📄 Processing PDF documents into vector database..."
+	@if [ -d "./data" ] && [ $$(ls -1 ./data/*.pdf 2>/dev/null | wc -l) -gt 0 ]; then \
+		source .venv/bin/activate && python ingest.py && echo "✅ Document ingestion completed successfully"; \
+	else \
+		echo "❌ No PDF files found in ./data directory"; \
+		echo "Please add PDF files to ./data/ first"; \
+		exit 1; \
+	fi
 
 # Run the application
 run:

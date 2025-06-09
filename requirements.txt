@@ -14,4 +14,3 @@ uv
 mcp[cli]
 fastapi
 uvicorn
-gandalf
