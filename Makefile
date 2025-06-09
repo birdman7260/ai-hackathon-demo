@@ -1,15 +1,21 @@
-.PHONY: setup activate mcp-server run run-no-mcp clean help debug debug-embeddings debug-env debug-vectordb debug-graph debug-ingest ingest test-retrieval test-components debug-verbose clean-vectordb clean-all
+.PHONY: setup activate mcp-server fetch-data run run-no-mcp docker-build docker-run docker-interactive clean help debug debug-embeddings debug-env debug-vectordb debug-graph debug-ingest ingest test-retrieval test-components debug-verbose clean-vectordb clean-all
 
 # Default target
 help:
 	@echo "Available targets:"
 	@echo "  make setup           - Set up the project (run setup.sh)"
+	@echo "  make fetch-data      - Download NASA documents (required before ingest)"
 	@echo "  make ingest          - Process PDF documents into vector database"
 	@echo "  make run             - Run the main application"
 	@echo "  make run-no-mcp      - Run without MCP (avoids connection errors)"
 	@echo "  make clean           - Clean up temporary files and directories"
 	@echo "  make clean-vectordb  - Remove vector database"
 	@echo "  make clean-all       - Full cleanup including vector database"
+	@echo ""
+	@echo "Docker targets:"
+	@echo "  make docker-build    - Build Docker image"
+	@echo "  make docker-run      - Run Docker container (non-interactive)"
+	@echo "  make docker-interactive - Run Docker container (interactive Q&A)"
 	@echo ""
 	@echo "Debug targets:"
 	@echo "  make debug           - Run all debugging tests"
@@ -28,6 +34,16 @@ setup:
 	chmod +x setup.sh
 	./setup.sh
 
+# Download NASA documents from official sources
+fetch-data:
+	@echo "📥 Downloading NASA documents..."
+	@if [ ! -f ".venv/bin/activate" ]; then \
+		echo "❌ Virtual environment not found. Run 'make setup' first."; \
+		exit 1; \
+	fi
+	source .venv/bin/activate && python fetch_nasa_data.py
+	@echo "✅ NASA documents downloaded successfully to ./data/"
+
 # Process PDF documents into vector database
 ingest:
 	@echo "📄 Processing PDF documents into vector database..."
@@ -35,7 +51,7 @@ ingest:
 		source .venv/bin/activate && python ingest.py && echo "✅ Document ingestion completed successfully"; \
 	else \
 		echo "❌ No PDF files found in ./data directory"; \
-		echo "Please add PDF files to ./data/ first"; \
+		echo "💡 Run 'make fetch-data' first to download NASA documents"; \
 		exit 1; \
 	fi
 
@@ -48,6 +64,28 @@ run:
 run-no-mcp:
 	@echo "Running the application without MCP..."
 	source .venv/bin/activate && MCP_SERVER_URLS="" python graph_demo.py
+
+# === DOCKER TARGETS ===
+
+# Build Docker image
+docker-build:
+	@echo "🐳 Building Docker image..."
+	docker build -t nasa-qa-demo .
+	@echo "✅ Docker image built successfully"
+
+# Run Docker container (non-interactive, for testing)
+docker-run:
+	@echo "🐳 Running Docker container (non-interactive)..."
+	@echo "This will download data, ingest documents, and exit."
+	docker run --rm --env-file .env nasa-qa-demo
+
+# Run Docker container (interactive Q&A mode)
+docker-interactive:
+	@echo "🐳 Starting interactive NASA Q&A system in Docker..."
+	@echo "💡 You can now ask questions about NASA documents!"
+	@echo "💡 Type 'quit', 'exit', or 'q' to stop, or press Ctrl+C"
+	@echo ""
+	docker run -it --rm --env-file .env nasa-qa-demo
 
 # === DEBUG TARGETS ===
 
@@ -102,7 +140,7 @@ debug-ingest:
 		echo "✅ Ingestion completed"; \
 	else \
 		echo "❌ No PDF files found in ./data directory"; \
-		echo "Please add PDF files to ./data/ first"; \
+		echo "💡 Run 'make fetch-data' first to download NASA documents"; \
 	fi
 
 # Test retrieval with sample queries
@@ -152,6 +190,8 @@ clean-vectordb:
 	rm -rf chroma_db/
 	@echo "✅ Vector database removed. Run 'make debug-ingest' to recreate."
 
-# Full clean including vector database
+# Full clean including vector database and data
 clean-all: clean clean-vectordb
+	@echo "🗑️  Removing downloaded data..."
+	rm -rf data/
 	@echo "🧹 Full cleanup completed" 

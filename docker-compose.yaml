@@ -1,4 +1,3 @@
-version: "3.9"
 services:
   demo:
     build: .
@@ -6,3 +5,4 @@ services:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - MCP_SERVER_URLS=${MCP_SERVER_URLS}
     tty: true
+    stdin_open: true

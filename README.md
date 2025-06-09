@@ -6,6 +6,7 @@
 [![LangChain](https://img.shields.io/badge/LangChain-0.3-green.svg)](https://langchain.com)
 [![OpenAI](https://img.shields.io/badge/OpenAI-GPT--4o--mini-orange.svg)](https://openai.com)
 [![Chroma](https://img.shields.io/badge/Chroma-Vector%20DB-purple.svg)](https://trychroma.com)
+[![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg)](https://docker.com)
 
 ## 📋 Table of Contents
 
@@ -18,6 +19,7 @@
   - [Quick Start](#quick-start)
   - [Example Prompts](#example-prompts)
   - [Advanced Usage](#advanced-usage)
+- [Docker Deployment](#-docker-deployment)
 - [Architecture](#architecture)
 - [Debugging & Troubleshooting](#debugging--troubleshooting)
 - [Development](#development)
@@ -50,6 +52,7 @@ This system transforms NASA's technical documentation into an interactive Q&A in
 - **⚡ Fast Retrieval**: Sub-second query processing with 361 indexed documents
 - **🛠️ Comprehensive Debugging**: Built-in tools for system health monitoring
 - **🔧 Flexible Architecture**: Modular design with optional MCP integration
+- **🐳 Docker Ready**: Containerized deployment with interactive support
 - **📊 Analytics Ready**: Built-in metrics and performance monitoring
 
 ## 🔧 Prerequisites
@@ -68,6 +71,11 @@ This system transforms NASA's technical documentation into an interactive Q&A in
 - Windows (WSL recommended)
 
 ## 🚀 Installation
+
+You can run the NASA Q&A system either locally with Python or using Docker. Choose the method that best fits your environment:
+
+- **🐍 Local Python Setup**: Full development capabilities with debugging tools
+- **🐳 Docker Setup**: Isolated environment, consistent deployment (see [Docker Deployment](#-docker-deployment))
 
 ### Quick Setup (Recommended)
 
@@ -147,10 +155,13 @@ make debug-env
 # ✅ Virtual environment active
 ```
 
-### 3. Ingest NASA Documents
+### 3. Download and Ingest NASA Documents
 
 ```bash
-# Process the included NASA PDFs
+# First, download the NASA documents
+make fetch-data
+
+# Then process the PDFs into the vector database
 make ingest
 
 # Verify the vector database
@@ -172,8 +183,9 @@ make debug-vectordb
 ./setup.sh
 nano .env  # Add your OpenAI API key
 
-# Activate environment and ingest documents
+# Activate environment, download data, and ingest documents
 source ./activate.sh
+make fetch-data
 make ingest
 ```
 
@@ -261,6 +273,151 @@ make debug
 make test-components
 make debug-embeddings
 ```
+
+## 🐳 Docker Deployment
+
+Docker provides an isolated, reproducible environment for running the NASA Q&A system. The containerized version automatically handles data fetching, document ingestion, and application startup.
+
+### Prerequisites for Docker
+
+- **Docker Desktop**: Latest version recommended
+- **OpenAI API Key**: Required and configured in `.env` file
+- **Memory**: 4GB+ RAM for Docker container operations
+
+### Quick Docker Start
+
+#### 1. Build the Docker Image
+
+```bash
+# Build the Docker image with all dependencies
+make docker-build
+
+# Or use direct Docker command:
+# docker build -t nasa-qa-demo .
+```
+
+#### 2. Run Interactively (Recommended)
+
+```bash
+# Start interactive Q&A session in Docker
+make docker-interactive
+
+# This will:
+# ✅ Download NASA documents automatically
+# ✅ Process them into vector database
+# ✅ Start the interactive Q&A interface
+# ✅ Show the thinking animation
+# ✅ Allow you to ask questions and get responses
+```
+
+You'll see output like:
+```text
+🐳 Starting interactive NASA Q&A system in Docker...
+💡 You can now ask questions about NASA documents!
+💡 Type 'quit', 'exit', or 'q' to stop, or press Ctrl+C
+
+↓ nasa_se_handbook.pdf
+↓ artemis_i_press_kit.pdf
+↓ clps_press_kit.pdf
+NASA docs ready → ./data
+🚀 NASA Document Q&A System
+Ask questions about NASA documents. Type 'quit', 'exit', or 'q' to stop.
+============================================================
+Ask ▶ 
+```
+
+#### 3. Test Your Docker Setup
+
+```bash
+# Run non-interactive mode for testing
+make docker-run
+
+# This validates the complete pipeline without user interaction
+```
+
+### Docker Commands Reference
+
+| Command | Purpose | Use Case |
+|---------|---------|----------|
+| `make docker-build` | Build Docker image | Initial setup, after code changes |
+| `make docker-interactive` | Interactive Q&A session | Normal usage, demonstrations |
+| `make docker-run` | Non-interactive pipeline test | CI/CD, automated testing |
+
+### Direct Docker Commands
+
+If you prefer using Docker directly:
+
+```bash
+# Build image
+docker build -t nasa-qa-demo .
+
+# Run interactively (recommended for Q&A)
+docker run -it --rm --env-file .env nasa-qa-demo
+
+# Run non-interactively (for testing)
+docker run --rm --env-file .env nasa-qa-demo
+```
+
+### Docker vs Local Development
+
+| Aspect | Docker | Local Development |
+|--------|--------|-------------------|
+| **Setup** | One command after build | Multi-step setup process |
+| **Dependencies** | Isolated container | Requires Python 3.13+ |
+| **Performance** | ~10% overhead | Native performance |
+| **Debugging** | Limited access | Full debugging tools |
+| **Updates** | Rebuild required | Instant code changes |
+
+### Docker Troubleshooting
+
+#### Common Docker Issues
+
+**1. Container Exits Immediately**
+```bash
+# Check Docker logs
+docker logs <container-id>
+
+# Verify .env file exists and has OPENAI_API_KEY
+ls -la .env
+```
+
+**2. Interactive Mode Not Working**
+```bash
+# Use our recommended command
+make docker-interactive
+
+# NOT: docker-compose up (has interactive input limitations)
+```
+
+**3. API Key Issues in Docker**
+```bash
+# Verify .env file format
+cat .env
+
+# Should contain:
+# OPENAI_API_KEY=sk-your-actual-key-here
+```
+
+**4. Out of Memory Errors**
+```bash
+# Increase Docker memory limit in Docker Desktop
+# Recommended: 4GB+ for smooth operation
+```
+
+### When to Use Docker
+
+**✅ Use Docker when:**
+- Deploying to production servers
+- Ensuring consistent environments across teams
+- Running in CI/CD pipelines
+- Avoiding local Python environment conflicts
+- Demonstrating to stakeholders
+
+**🔧 Use Local Development when:**
+- Actively developing and debugging code
+- Need access to debugging tools (`make debug`)
+- Frequent code changes and testing
+- Full performance optimization required
 
 ## 🏗️ Architecture
 
@@ -435,12 +592,18 @@ make debug-env
 .
 ├── graph_demo.py           # Main application
 ├── ingest.py              # Document processing
+├── fetch_nasa_data.py     # NASA document downloader
 ├── debug_embeddings.py    # Embedding diagnostics
 ├── test_retrieval.py      # Query testing
 ├── requirements.txt       # Python dependencies
-├── Makefile              # Automation commands
+├── Makefile              # Automation commands (includes Docker targets)
+├── Dockerfile            # Docker container configuration
+├── docker-compose.yaml   # Docker Compose configuration
 ├── .env                  # Configuration (create from .env.example)
-├── data/                 # Source PDF documents
+├── common/               # Shared utilities
+│   ├── __init__.py       # Package initialization
+│   └── thinking_spinner.py # ASCII animation for thinking state
+├── data/                 # Source PDF documents (auto-downloaded)
 │   ├── nasa_se_handbook.pdf
 │   ├── artemis_i_press_kit.pdf
 │   └── clps_press_kit.pdf
