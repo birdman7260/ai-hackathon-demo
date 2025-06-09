@@ -38,7 +38,20 @@ load_dotenv(override=True)
 # STATE DEFINITION
 # =============================================================================
 # Defines the data structure that flows through the LangGraph workflow
+
 class State(TypedDict):
+    """
+    State object that flows through the LangGraph workflow.
+    
+    This TypedDict defines the data structure that gets passed between
+    workflow nodes in the RAG pipeline. Each node can read from and
+    modify this state as it flows through the execution graph.
+    
+    Attributes:
+        question (str): The user's input question/query
+        context (str): Retrieved relevant document chunks from vector search
+        answer (str): The final generated executive-level response
+    """
     question: str    # User's input question
     context: str     # Retrieved relevant document chunks
     answer: str      # Generated executive-level response
@@ -65,13 +78,52 @@ llm = ChatOpenAI(model="gpt-4o-mini")
 
 # Define MCP tool wrapper class
 class MCPTool(BaseTool):
-    """Wrapper class for Model Context Protocol tools"""
-    def __init__(self, name, callable):
+    """
+    Wrapper class for Model Context Protocol (MCP) tools.
+    
+    This class adapts external MCP tools to work within the LangChain framework.
+    MCP is a protocol for integrating external tools and services with language
+    models, allowing for extended capabilities beyond the base LLM.
+    
+    The wrapper handles the translation between LangChain's tool interface
+    and the MCP protocol, enabling seamless integration of external services.
+    
+    Attributes:
+        name (str): The name of the MCP tool
+        callable (callable): The function that executes the MCP tool
+        
+    Example:
+        tool = MCPTool("file_reader", lambda x: read_file(x))
+    """
+    
+    def __init__(self, name: str, callable):
+        """
+        Initialize the MCP tool wrapper.
+        
+        Args:
+            name (str): Human-readable name for the tool
+            callable: Function that implements the tool's functionality
+        """
         super().__init__(name=name)
         self.callable = callable
         
     def _run(self, *args, **kwargs):
-        """Execute the MCP tool with given parameters"""
+        """
+        Execute the MCP tool with given parameters.
+        
+        This method is called by LangChain when the tool needs to be executed.
+        It delegates to the wrapped callable function.
+        
+        Args:
+            *args: Positional arguments to pass to the tool
+            **kwargs: Keyword arguments to pass to the tool
+            
+        Returns:
+            The result from the MCP tool execution
+            
+        Raises:
+            ToolException: If the MCP tool execution fails
+        """
         return self.callable(*args, **kwargs)
 
 # Configure MCP client and discover available tools
@@ -130,7 +182,31 @@ mcp_tools = get_mcp_tools()
 
 # Tool decorator (currently unused but kept for potential future expansion)
 def as_tool(func):
-    """Decorator to mark functions as workflow tools"""
+    """
+    Decorator to mark functions as workflow tools.
+    
+    This decorator is designed to mark functions as tools that can be used
+    within the LangGraph workflow. Currently it's a pass-through decorator
+    but provides a hook for future functionality such as:
+    
+    - Tool registration and discovery
+    - Automatic schema generation
+    - Input/output validation
+    - Logging and monitoring
+    - Error handling standardization
+    
+    Args:
+        func (callable): The function to be marked as a tool
+        
+    Returns:
+        callable: The original function, unmodified
+        
+    Example:
+        @as_tool
+        def my_workflow_function(state):
+            # Function implementation
+            return modified_state
+    """
     return func
 
 @as_tool
