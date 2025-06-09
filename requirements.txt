@@ -1,0 +1,17 @@
+langchain==0.3.*
+langgraph
+langchain-openai
+langchain-chroma
+chromadb
+langchain-mcp-adapters
+langchain-community
+python-dotenv
+unstructured[pdf]
+pdfminer.six
+pi-heif
+requests 
+uv
+mcp[cli]
+fastapi
+uvicorn
+gandalf
