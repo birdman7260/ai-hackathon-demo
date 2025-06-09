@@ -1,0 +1,55 @@
+# Git repository files (not needed in container)
+.git
+.gitignore
+
+# Python virtual environment (container has its own Python)
+.venv
+
+# Generated data and databases (will be created by container)
+data/
+chroma_db/
+
+# Python bytecode and cache files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# macOS system files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+
+# Documentation files (not needed for runtime)
+README.md
+LICENSE
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Testing and development files
+.pytest_cache/
+.coverage
+.tox/
+.mypy_cache/
+
+# Environment example (keep .env for runtime)
+.env.example
+
+# Docker files (avoid recursive copies)
+Dockerfile
+docker-compose.yaml
+.dockerignore
+
+# Build artifacts and logs
+*.log
+dist/
+build/
+*.egg-info/ 
