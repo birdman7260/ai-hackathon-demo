@@ -1,4 +1,4 @@
-.PHONY: setup activate mcp-server fetch-data run run-no-mcp docker-build docker-interactive clean help debug debug-embeddings debug-env debug-vectordb debug-graph debug-ingest ingest test-retrieval test-components debug-verbose clean-vectordb clean-all
+.PHONY: setup activate mcp-server fetch-data run run-no-mcp mcp-start mcp-http mcp-dev mcp-test mcp-stop mcp-status docker-build docker-interactive clean help debug debug-embeddings debug-env debug-vectordb debug-graph debug-ingest ingest test-retrieval test-components debug-verbose clean-vectordb clean-all
 
 # Default target
 help:
@@ -11,6 +11,14 @@ help:
 	@echo "  make clean           - Clean up temporary files and directories"
 	@echo "  make clean-vectordb  - Remove vector database"
 	@echo "  make clean-all       - Full cleanup including vector database"
+	@echo ""
+	@echo "MCP targets:"
+	@echo "  make mcp-start       - Start MCP filesystem server (stdio transport)"
+	@echo "  make mcp-http        - Start MCP server with HTTP transport (URL: http://127.0.0.1:8000)"
+	@echo "  make mcp-dev         - Start MCP server with inspector (HTTP: 6274, Proxy: 6277)"
+	@echo "  make mcp-test        - Test MCP integration with LangChain"
+	@echo "  make mcp-stop        - Stop all running MCP processes"
+	@echo "  make mcp-status      - Check MCP server status and ports"
 	@echo ""
 	@echo "Docker targets:"
 	@echo "  make docker-build    - Build Docker image (includes NASA docs and vector DB)"
@@ -63,6 +71,53 @@ run:
 run-no-mcp:
 	@echo "Running the application without MCP..."
 	source .venv/bin/activate && MCP_SERVER_URLS="" python graph_demo.py
+
+
+
+# === MCP TARGETS ===
+
+# Start MCP filesystem server (stdio transport for LangChain integration)
+mcp-start:
+	@echo "🔧 Starting MCP filesystem server..."
+	@echo "📡 Transport: stdio (for LangChain integration)"
+	@echo "🛑 Press Ctrl+C to stop"
+	source .venv/bin/activate && fastmcp run mcp_filesystem.py
+
+# Start MCP server with HTTP transport (for URL-based access)
+mcp-http:
+	@echo "🔧 Starting MCP filesystem server with HTTP transport..."
+	@echo "📡 URL: http://127.0.0.1:8000"
+	@echo "🌐 Use MCP_SERVER_URLS=http://127.0.0.1:8000"
+	@echo "🛑 Press Ctrl+C to stop"
+	source .venv/bin/activate && FASTMCP_TRANSPORT=http python mcp_filesystem.py
+
+# Start MCP server with development inspector (HTTP transport)
+mcp-dev:
+	@echo "🔧 Starting MCP filesystem server with inspector..."
+	@echo "📡 Inspector: http://127.0.0.1:6274"
+	@echo "📡 Proxy: http://127.0.0.1:6277"
+	@echo "🛑 Press Ctrl+C to stop"
+	source .venv/bin/activate && fastmcp dev mcp_filesystem.py
+
+# Test MCP integration with LangChain
+mcp-test:
+	@echo "🧪 Testing MCP integration with LangChain..."
+	source .venv/bin/activate && python test_langchain_mcp.py
+
+# Stop all running MCP processes
+mcp-stop:
+	@echo "🛑 Stopping all MCP processes..."
+	@pkill -f fastmcp || echo "No MCP processes running"
+	@echo "✅ MCP processes stopped"
+
+# Check MCP server status and ports
+mcp-status:
+	@echo "📊 Checking MCP server status..."
+	@echo "🔍 Running MCP processes:"
+	@ps aux | grep -E "(fastmcp|mcp)" | grep -v grep || echo "No MCP processes running"
+	@echo ""
+	@echo "🔍 MCP ports in use:"
+	@netstat -an | grep LISTEN | grep -E "627[0-9]" || echo "No MCP ports in use"
 
 # === DOCKER TARGETS ===
 

@@ -1,7 +1,6 @@
-from typing import Any
 import os
 import pathlib
-from mcp.server.fastmcp import FastMCP
+from fastmcp import FastMCP
 
 mcp = FastMCP("filesystem-explorer")
 
@@ -59,3 +58,19 @@ def get_file_info(file_path: str) -> dict:
         }
     except Exception as e:
         return {"error": str(e)}
+
+# Add main block to run as server with different transport options
+if __name__ == "__main__":
+    # Check for transport type from environment or default to stdio
+    transport = os.getenv("FASTMCP_TRANSPORT", "stdio")
+    
+    if transport == "http" or transport == "streamable-http":
+        # Run with HTTP transport for URL-based access
+        host = os.getenv("FASTMCP_HOST", "127.0.0.1")
+        port = int(os.getenv("FASTMCP_PORT", "8000"))
+        print(f"🚀 Starting FastMCP server with HTTP transport on {host}:{port}")
+        mcp.run(transport="streamable-http", host=host, port=port)
+    else:
+        # Default to stdio transport for LangChain integration
+        print("🚀 Starting FastMCP server with stdio transport")
+        mcp.run()

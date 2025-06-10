@@ -7,17 +7,11 @@
 # similarity search and LLM generation orchestrated by LangGraph.
 # =============================================================================
 
-# Core imports for type definitions and graph orchestration
-from typing import TypedDict
-from langgraph.graph import Graph
-
 # LangChain components for LLM and embeddings
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 
 # LangChain tool framework
 from langchain_core.tools import Tool
-from langchain_core.tools.base import ToolException
-from langchain.agents.tools import BaseTool
 
 # Vector database for document storage and retrieval
 from langchain_chroma import Chroma
@@ -25,7 +19,6 @@ from langchain_chroma import Chroma
 # Environment configuration
 from dotenv import load_dotenv
 import os
-import requests
 
 # Shared utilities
 from common import ThinkingSpinner
@@ -35,26 +28,10 @@ from common import ThinkingSpinner
 load_dotenv(override=True)
 
 # =============================================================================
-# STATE DEFINITION
+# LEGACY COMPONENTS (kept for reference)
 # =============================================================================
-# Defines the data structure that flows through the LangGraph workflow
-
-class State(TypedDict):
-    """
-    State object that flows through the LangGraph workflow.
-    
-    This TypedDict defines the data structure that gets passed between
-    workflow nodes in the RAG pipeline. Each node can read from and
-    modify this state as it flows through the execution graph.
-    
-    Attributes:
-        question (str): The user's input question/query
-        context (str): Retrieved relevant document chunks from vector search
-        answer (str): The final generated executive-level response
-    """
-    question: str    # User's input question
-    context: str     # Retrieved relevant document chunks
-    answer: str      # Generated executive-level response
+# These components are from the original implementation and are kept for
+# reference but not used in the modern workflow
 
 # =============================================================================
 # CORE COMPONENTS SETUP
@@ -76,195 +53,329 @@ llm = ChatOpenAI(model="gpt-4o-mini")
 # MCP allows integration with external tools and services
 # This section is optional and can be disabled via environment variables
 
-# Define MCP tool wrapper class
-class MCPTool(BaseTool):
-    """
-    Wrapper class for Model Context Protocol (MCP) tools.
-    
-    This class adapts external MCP tools to work within the LangChain framework.
-    MCP is a protocol for integrating external tools and services with language
-    models, allowing for extended capabilities beyond the base LLM.
-    
-    The wrapper handles the translation between LangChain's tool interface
-    and the MCP protocol, enabling seamless integration of external services.
-    
-    Attributes:
-        name (str): The name of the MCP tool
-        callable (callable): The function that executes the MCP tool
-        
-    Example:
-        tool = MCPTool("file_reader", lambda x: read_file(x))
-    """
-    
-    def __init__(self, name: str, callable):
-        """
-        Initialize the MCP tool wrapper.
-        
-        Args:
-            name (str): Human-readable name for the tool
-            callable: Function that implements the tool's functionality
-        """
-        super().__init__(name=name)
-        self.callable = callable
-        
-    def _run(self, *args, **kwargs):
-        """
-        Execute the MCP tool with given parameters.
-        
-        This method is called by LangChain when the tool needs to be executed.
-        It delegates to the wrapped callable function.
-        
-        Args:
-            *args: Positional arguments to pass to the tool
-            **kwargs: Keyword arguments to pass to the tool
-            
-        Returns:
-            The result from the MCP tool execution
-            
-        Raises:
-            ToolException: If the MCP tool execution fails
-        """
-        return self.callable(*args, **kwargs)
+# MCP tools are now handled by langchain_mcp_adapters.client.MultiServerMCPClient
+# This provides proper MCP protocol integration instead of custom HTTP wrappers
 
 # Configure MCP client and discover available tools
 def get_mcp_tools():
     """
-    Discover and configure MCP tools from configured server URLs.
+    Discover and configure MCP tools from configured server URLs using proper MCP protocol.
     Returns empty list if no MCP servers are configured (graceful degradation).
     """
+    import asyncio
+    from langchain_mcp_adapters.client import MultiServerMCPClient
+    
     # Get MCP server URLs from environment, skip if empty
     mcp_server_urls_str = os.getenv("MCP_SERVER_URLS", "").strip()
     if not mcp_server_urls_str:
         return []
     
     mcp_server_urls = mcp_server_urls_str.split(",")
-    tools = []
     
-    # Attempt to connect to each configured MCP server
-    for url in mcp_server_urls:
-        if not url.strip():
-            continue
+    async def get_tools_async():
+        tools = []
+        
+        # Attempt to connect to each configured MCP server
+        for i, url in enumerate(mcp_server_urls):
+            if not url.strip():
+                continue
+                
+            try:
+                # Create proper MCP client configuration
+                server_name = f"server_{i}"
+                
+                # Determine transport based on URL
+                if url.strip().startswith('http'):
+                    # HTTP transport - ensure URL ends with /mcp/
+                    clean_url = url.strip()
+                    if not clean_url.endswith('/mcp/'):
+                        if clean_url.endswith('/mcp'):
+                            clean_url += '/'
+                        else:
+                            clean_url += '/mcp/'
+                    
+                    config = {
+                        server_name: {
+                            "url": clean_url,
+                            "transport": "streamable_http"
+                        }
+                    }
+                else:
+                    # Assume stdio transport
+                    config = {
+                        server_name: {
+                            "command": "python",
+                            "args": [url.strip()],
+                            "transport": "stdio"
+                        }
+                    }
+                
+                # Create MCP client with proper protocol
+                client = MultiServerMCPClient(config)
+                server_tools = await client.get_tools(server_name=server_name)
+                tools.extend(server_tools)
+                
+                print(f"✅ Connected to MCP server {clean_url if 'clean_url' in locals() else url}: {len(server_tools)} tools")
+                
+            except Exception as e:
+                # Print error but continue - MCP is optional
+                print(f"Error connecting to MCP server {url}: {str(e)}")
+                
+        return tools
+    
+    # Run async function in event loop
+    try:
+        return asyncio.run(get_tools_async())
+    except Exception as e:
+        print(f"Failed to initialize MCP tools: {e}")
+        return []
+
+def create_sync_mcp_tools():
+    """
+    Create sync versions of MCP tools since LangGraph React agent needs sync tools
+    """
+    import asyncio
+    from langchain_mcp_adapters.client import MultiServerMCPClient
+    from langchain_core.tools import tool
+    
+    # Get MCP server URLs from environment
+    mcp_server_urls_str = os.getenv("MCP_SERVER_URLS", "").strip()
+    if not mcp_server_urls_str:
+        return []
+    
+    mcp_server_urls = mcp_server_urls_str.split(",")
+    
+    # Initialize client globally for reuse
+    global mcp_client
+    mcp_client = None
+    
+    async def init_mcp_client():
+        """Initialize MCP client once"""
+        global mcp_client
+        if mcp_client is not None:
+            return mcp_client
             
+        for i, url in enumerate(mcp_server_urls):
+            if not url.strip():
+                continue
+                
+            try:
+                server_name = f"server_{i}"
+                clean_url = url.strip()
+                if not clean_url.endswith('/mcp/'):
+                    if clean_url.endswith('/mcp'):
+                        clean_url += '/'
+                    else:
+                        clean_url += '/mcp/'
+                
+                config = {
+                    server_name: {
+                        "url": clean_url,
+                        "transport": "streamable_http"
+                    }
+                }
+                
+                mcp_client = MultiServerMCPClient(config)
+                tools = await mcp_client.get_tools(server_name=server_name)
+                print(f"✅ MCP sync wrapper connected: {len(tools)} tools from {clean_url}")
+                return mcp_client
+                
+            except Exception as e:
+                print(f"Error in sync wrapper connecting to {url}: {str(e)}")
+                continue
+        
+        return None
+    
+    # Initialize client
+    try:
+        asyncio.run(init_mcp_client())
+    except Exception as e:
+        print(f"Failed to initialize MCP client for sync wrappers: {e}")
+        return []
+    
+    if mcp_client is None:
+        return []
+    
+    # Create sync wrapper tools
+    @tool
+    def list_directory(path: str) -> str:
+        """List contents of a directory"""
+        async def _list_directory():
+            try:
+                # Get the async tool and invoke it
+                tools = await mcp_client.get_tools(server_name="server_0")
+                list_tool = None
+                for t in tools:
+                    if t.name == "list_directory":
+                        list_tool = t
+                        break
+                
+                if list_tool is None:
+                    return "Error: list_directory tool not found"
+                
+                result = await list_tool.ainvoke({"path": path})
+                return result
+            except Exception as e:
+                return f"Error listing directory: {str(e)}"
+        
         try:
-            # Query server for available tools
-            response = requests.get(f"{url.strip()}/mcp")
-            if response.status_code == 200:
-                data = response.json()
-                # Create tool wrappers for each discovered tool
-                for tool in data.get("tools", []):
-                    tool_name = tool.get("name")
-                    if tool_name:
-                        # Create a callable for this specific tool
-                        def create_tool_callable(tool_url, tool_name):
-                            def call_tool(params):
-                                response = requests.post(f"{tool_url}/mcp/{tool_name}", json=params)
-                                if response.status_code == 200:
-                                    return response.json()
-                                else:
-                                    raise ToolException(f"Error calling {tool_name}: {response.text}")
-                            return call_tool
-                            
-                        callable_fn = create_tool_callable(url.strip(), tool_name)
-                        tools.append(MCPTool(name=tool_name, callable=callable_fn))
+            return asyncio.run(_list_directory())
         except Exception as e:
-            # Print error but continue - MCP is optional
-            print(f"Error connecting to MCP server {url}: {str(e)}")
-            
-    return tools
-
-# Get available MCP tools (empty list if none configured)
-mcp_tools = get_mcp_tools()
-
-# =============================================================================
-# WORKFLOW FUNCTIONS
-# =============================================================================
-# These functions define the steps in our RAG pipeline
-
-# Tool decorator (currently unused but kept for potential future expansion)
-def as_tool(func):
-    """
-    Decorator to mark functions as workflow tools.
+            return f"Error in sync wrapper: {str(e)}"
     
-    This decorator is designed to mark functions as tools that can be used
-    within the LangGraph workflow. Currently it's a pass-through decorator
-    but provides a hook for future functionality such as:
-    
-    - Tool registration and discovery
-    - Automatic schema generation
-    - Input/output validation
-    - Logging and monitoring
-    - Error handling standardization
-    
-    Args:
-        func (callable): The function to be marked as a tool
+    @tool
+    def read_file(file_path: str, max_lines: int = 100) -> str:
+        """Read contents of a text file"""
+        async def _read_file():
+            try:
+                tools = await mcp_client.get_tools(server_name="server_0")
+                read_tool = None
+                for t in tools:
+                    if t.name == "read_file":
+                        read_tool = t
+                        break
+                
+                if read_tool is None:
+                    return "Error: read_file tool not found"
+                
+                result = await read_tool.ainvoke({"file_path": file_path, "max_lines": max_lines})
+                return result
+            except Exception as e:
+                return f"Error reading file: {str(e)}"
         
-    Returns:
-        callable: The original function, unmodified
+        try:
+            return asyncio.run(_read_file())
+        except Exception as e:
+            return f"Error in sync wrapper: {str(e)}"
+    
+    @tool
+    def search_files(directory: str, pattern: str, file_type: str = "") -> str:
+        """Search for files by name pattern"""
+        async def _search_files():
+            try:
+                tools = await mcp_client.get_tools(server_name="server_0")
+                search_tool = None
+                for t in tools:
+                    if t.name == "search_files":
+                        search_tool = t
+                        break
+                
+                if search_tool is None:
+                    return "Error: search_files tool not found"
+                
+                result = await search_tool.ainvoke({
+                    "directory": directory, 
+                    "pattern": pattern, 
+                    "file_type": file_type
+                })
+                return result
+            except Exception as e:
+                return f"Error searching files: {str(e)}"
         
-    Example:
-        @as_tool
-        def my_workflow_function(state):
-            # Function implementation
-            return modified_state
-    """
-    return func
+        try:
+            return asyncio.run(_search_files())
+        except Exception as e:
+            return f"Error in sync wrapper: {str(e)}"
+    
+    @tool
+    def get_file_info(file_path: str) -> str:
+        """Get detailed file information"""
+        async def _get_file_info():
+            try:
+                tools = await mcp_client.get_tools(server_name="server_0")
+                info_tool = None
+                for t in tools:
+                    if t.name == "get_file_info":
+                        info_tool = t
+                        break
+                
+                if info_tool is None:
+                    return "Error: get_file_info tool not found"
+                
+                result = await info_tool.ainvoke({"file_path": file_path})
+                return result
+            except Exception as e:
+                return f"Error getting file info: {str(e)}"
+        
+        try:
+            return asyncio.run(_get_file_info())
+        except Exception as e:
+            return f"Error in sync wrapper: {str(e)}"
+    
+    return [list_directory, read_file, search_files, get_file_info]
 
-@as_tool
-def retrieve(state: State):
-    """
-    Retrieve relevant document chunks using vector similarity search.
-    
-    This function:
-    1. Takes the user's question from the state
-    2. Performs semantic search in the vector database
-    3. Retrieves the top 4 most relevant document chunks
-    4. Concatenates them into context for the LLM
-    """
-    hits = vectordb.similarity_search(state["question"], k=4)
-    # Join retrieved documents with double newlines for clear separation
-    state["context"] = "\n\n".join(d.page_content for d in hits)
-    return state
-
-@as_tool
-def generate(state: State):
-    """
-    Generate executive-level response using LLM.
-    
-    This function:
-    1. Creates a prompt specifically for executive audiences
-    2. Includes the retrieved context and user question
-    3. Uses the LLM to generate a focused, high-level response
-    """
-    # Craft prompt specifically for executive-level responses
-    prompt = f"""Answer for executives only.\nContext:\n{state['context']}\nQuestion: {state['question']}"""
-    # Generate response using the LLM
-    state["answer"] = llm.invoke(prompt).content
-    
-    return state
+# Get available MCP tools using sync wrappers
+mcp_tools = create_sync_mcp_tools()
 
 # =============================================================================
-# LANGRAPH WORKFLOW CONSTRUCTION
+# MODERN LANGGRAPH WORKFLOW WITH PROPER MCP INTEGRATION
 # =============================================================================
-# Build the execution graph that orchestrates our RAG pipeline
+# Build a proper LangGraph workflow using best practices
 
-# Initialize the graph
-graph = Graph()
+from langchain_core.messages import HumanMessage
+from langchain_core.tools import tool
 
-# Add workflow nodes
-graph.add_node("retrieve", retrieve)  # Document retrieval step
-graph.add_node("generate", generate)  # Response generation step
+# Create NASA search tool
+@tool
+def nasa_document_search(query: str) -> str:
+    """Search NASA documents and provide executive-level answers about space missions, engineering, and NASA policies"""
+    hits = vectordb.similarity_search(query, k=4)
+    context = "\n\n".join(d.page_content for d in hits)
+    prompt = f"""Answer for executives only.\nContext:\n{context}\nQuestion: {query}"""
+    answer = llm.invoke(prompt).content
+    return answer
 
-# Add any discovered MCP tools as additional nodes
-for t in mcp_tools:
-    graph.add_node(t.name, t)
+# Initialize LLM with proper configuration
+llm_with_tools = ChatOpenAI(model="gpt-4o-mini", temperature=0)
 
-# Define workflow execution order
-graph.set_entry_point("retrieve")           # Start with document retrieval
-graph.add_edge("retrieve", "generate")      # Then generate response
-graph.set_finish_point("generate")          # End after generation
+# Configure tools based on MCP availability
+if mcp_tools:
+    print(f"🔧 Using modern LangGraph with MCP integration: {len(mcp_tools)} MCP tools + NASA search")
+    all_tools = [nasa_document_search] + mcp_tools
+    llm_with_tools = llm_with_tools.bind_tools(all_tools)
+else:
+    print("🔧 Using modern LangGraph with NASA search only")
+    all_tools = [nasa_document_search]
+    llm_with_tools = llm_with_tools.bind_tools(all_tools)
 
-# Compile the graph into an executable chain
-chain = graph.compile()
+# Use the prebuilt React agent which handles tool orchestration properly
+from langgraph.prebuilt import create_react_agent
+
+# Create system message based on available tools
+if mcp_tools:
+    system_message = """You are a helpful AI assistant with access to NASA documents and filesystem tools.
+
+TOOLS AVAILABLE:
+• nasa_document_search: For questions about NASA missions, engineering, policies, and space exploration
+• list_directory: List contents of a directory (use with specific path like "." for current directory)
+• read_file: Read contents of text files
+• search_files: Search for files by pattern in a directory
+• get_file_info: Get detailed information about files
+
+USAGE GUIDELINES:
+- For NASA/space questions: Use nasa_document_search
+- For filesystem operations: Use the MCP tools explicitly
+- Be proactive in using the appropriate tools
+- Always provide helpful, detailed responses
+
+Examples:
+- "What are NASA's risk strategies?" → Use nasa_document_search
+- "List current directory" → Use list_directory with path "."
+- "Read README file" → Use read_file with file path"""
+else:
+    system_message = """You are a helpful AI assistant with access to NASA documents.
+
+Use the nasa_document_search tool to answer questions about NASA missions, engineering, policies, and space exploration.
+Always provide executive-level, detailed responses based on the NASA documentation."""
+
+# Create the React agent with tools and system message
+chain = create_react_agent(
+    model=llm_with_tools,
+    tools=all_tools,
+    prompt=system_message
+)
+
+print("✅ Modern LangGraph workflow compiled successfully!")
 
 # Initialize the thinking spinner
 spinner = ThinkingSpinner()
@@ -289,24 +400,26 @@ if __name__ == "__main__":
             break
             
         try:
-            # Start the thinking animation
-            spinner.start()
+            # Use context manager for thinking animation
+            with spinner:
+                # Execute the modern LangGraph workflow with recursion limit
+                out = chain.invoke(
+                    {"messages": [HumanMessage(content=q)]},
+                    config={"recursion_limit": 25}
+                )
             
-            # Execute the RAG workflow
-            out = chain.invoke({"question": q})
-            
-            # Stop the animation before displaying results
-            spinner.stop()
-            
-            # Display results with error handling
-            if out and "answer" in out:
-                print("→", out["answer"], "\n")
+            # Display results - modern workflow always returns messages
+            if out and "messages" in out and out["messages"]:
+                # Get the final assistant message
+                final_message = out["messages"][-1]
+                if hasattr(final_message, 'content') and final_message.content:
+                    print("→", final_message.content, "\n")
+                else:
+                    print("→ No answer generated. Please try a different question.\n")
             else:
                 print("→ No answer generated. Please try a different question.\n")
                 
         except Exception as e:
-            # Stop animation on error
-            spinner.stop()
             # Handle errors gracefully
             print(f"→ Error: {str(e)}\n")
             print("💡 Tip: Try 'make debug' to check system health")

@@ -12,5 +12,6 @@ pi-heif
 requests 
 uv
 mcp[cli]
+fastmcp
 fastapi
 uvicorn

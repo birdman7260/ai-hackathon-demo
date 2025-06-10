@@ -55,4 +55,14 @@ class ThinkingSpinner:
                 self.spinner_thread.join(timeout=0.2)
             # Clear the spinner line
             sys.stdout.write("\r" + " " * 20 + "\r")
-            sys.stdout.flush() 
+            sys.stdout.flush()
+    
+    def __enter__(self):
+        """Context manager entry - start the spinner"""
+        self.start()
+        return self
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Context manager exit - stop the spinner"""
+        self.stop()
+        return False 
