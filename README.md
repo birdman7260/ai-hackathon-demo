@@ -28,7 +28,7 @@
 
 ## 🎯 Overview
 
-This system transforms NASA's technical documentation into an interactive Q&A interface designed for executives and technical leaders. Built with LangChain and OpenAI's GPT-4o-mini, it provides accurate, contextual answers by intelligently retrieving relevant information from processed NASA documents.
+This system transforms NASA's technical documentation into an interactive Q&A interface designed for executives and technical leaders. Built with LangChain's React agent pattern and OpenAI's GPT-4o-mini, it provides accurate, contextual answers by intelligently retrieving relevant information from processed NASA documents. The system features optional MCP (Model Context Protocol) integration for enhanced filesystem capabilities and follows a clean 5-layer modular architecture.
 
 ### What Problems Does This Solve?
 
@@ -39,10 +39,11 @@ This system transforms NASA's technical documentation into an interactive Q&A in
 
 ### Why This Technology Stack?
 
-- **LangChain**: Provides robust document processing and retrieval pipelines
-- **OpenAI GPT-4o-mini**: Delivers high-quality, cost-effective text generation
+- **LangChain**: Provides robust document processing, retrieval pipelines, and React agent framework
+- **OpenAI GPT-4o-mini**: Delivers high-quality, cost-effective text generation and embeddings
 - **Chroma Vector Database**: Enables semantic search across document chunks
-- **LangGraph**: Orchestrates complex workflows with retrieval and generation steps
+- **MCP (Model Context Protocol)**: Optional integration for filesystem and external tool access
+- **React Agent Pattern**: Intelligent reasoning and tool selection for complex queries
 
 ## ✨ Features
 
@@ -51,9 +52,12 @@ This system transforms NASA's technical documentation into an interactive Q&A in
 - **🎯 Executive Summaries**: Tailored responses for executive audiences
 - **⚡ Fast Retrieval**: Sub-second query processing with 361 indexed documents
 - **🛠️ Comprehensive Debugging**: Built-in tools for system health monitoring
-- **🔧 Flexible Architecture**: Modular design with optional MCP integration
+- **🔧 Modular Architecture**: Clean 5-layer architecture with single responsibility components
+- **🔌 MCP Integration**: Optional Model Context Protocol support for filesystem operations
+- **🤖 React Agent Pattern**: Intelligent tool selection and reasoning capabilities
 - **🐳 Docker Ready**: Containerized deployment with interactive support
 - **📊 Analytics Ready**: Built-in metrics and performance monitoring
+- **⚙️ Environment-Driven**: Configuration management with validation and graceful degradation
 
 ## 🔧 Prerequisites
 
@@ -81,7 +85,7 @@ You can run the NASA Q&A system either locally with Python or using Docker. Choo
 
 ```bash
 # 1. Clone and navigate to the project
-git clone <your-repository-url>
+git clone https://github.com/driches/ai-hackathon-demo
 cd hackathon-demo
 
 # 2. Run the automated setup script
@@ -134,7 +138,9 @@ nano .env  # or code .env, vim .env, etc.
 # Update this line with your actual API key:
 OPENAI_API_KEY=sk-your-actual-openai-api-key-here
 
-# Optional: Leave MCP_SERVER_URLS empty to disable MCP
+# Optional: MCP server URLs for filesystem integration (leave empty to disable)
+# Format: comma-separated URLs of running MCP servers  
+# Example: MCP_SERVER_URLS=http://127.0.0.1:8000/mcp/
 MCP_SERVER_URLS=
 ```
 
@@ -272,6 +278,59 @@ make debug
 # Individual component testing
 make test-components
 make debug-embeddings
+```
+
+### MCP (Model Context Protocol) Integration
+
+The system supports optional MCP integration for enhanced filesystem operations alongside NASA document search.
+
+#### What is MCP?
+
+MCP (Model Context Protocol) is a protocol that allows AI agents to interact with external tools and services. In our system, it provides filesystem access capabilities that complement the NASA document search.
+
+#### MCP Features
+
+- **Filesystem Operations**: Read, write, list files and directories
+- **Distributed Architecture**: MCP servers run separately from the main application
+- **Graceful Degradation**: System works with or without MCP servers
+- **Async/Sync Bridge**: Seamless integration between MCP's async protocol and LangChain's sync tools
+
+#### Running with MCP
+
+```bash
+# 1. Start an MCP server (example using filesystem server)
+# This would typically run on http://127.0.0.1:8000/mcp/
+
+# 2. Configure MCP in your .env file
+echo "MCP_SERVER_URLS=http://127.0.0.1:8000/mcp/" >> .env
+
+# 3. Run the application with MCP support
+make run
+
+# The agent will now have both NASA search AND filesystem tools
+```
+
+#### Running without MCP
+
+```bash
+# Run with NASA documents only (no filesystem tools)
+make run-no-mcp
+
+# Or leave MCP_SERVER_URLS empty in .env file
+```
+
+#### MCP Architecture
+
+```
+User Query → React Agent → Tool Selection
+                 │
+       ┌─────────┼─────────┐
+       │         │         │
+  NASA Search   MCP    File System
+  (Vector DB)  Bridge   Operations
+       │         │         │
+  Executive    HTTP     Read/Write
+  Response    Request    Files
 ```
 
 ## 🐳 Docker Deployment
@@ -429,42 +488,66 @@ cat .env
 └─────────────┘    └──────────────┘    └─────────────┘
                                               │
 ┌─────────────┐    ┌──────────────┐    ┌─────▼─────┐
-│   Response  │◀───│  Generation  │◀───│ Retrieval │
+│   Response  │◀───│  AI Agent    │◀───│ Retrieval │
 └─────────────┘    └──────────────┘    └───────────┘
-                           ▲
-                    ┌──────▼──────┐
-                    │ User Query  │
-                    └─────────────┘
+                           ▲                  ▲
+                    ┌──────▼──────┐    ┌──────▼──────┐
+                    │ User Query  │    │ MCP Tools   │
+                    └─────────────┘    └─────────────┘
 ```
+
+### 5-Layer Clean Architecture
+
+The system follows a modular, clean architecture pattern with distinct layers:
+
+1. **Configuration Layer** (`common/config.py`): Environment setup and validation
+2. **Data Layer** (`common/nasa_search.py`): Vector database and document retrieval  
+3. **Integration Layer** (`common/mcp_client.py`): External MCP server connections
+4. **Agent Layer** (`common/agent_factory.py`): AI agent creation and configuration
+5. **Presentation Layer** (`graph_demo.py`): User interface and interaction
 
 ### Key Components
 
-- **`graph_demo.py`**: Main application with LangGraph workflow
+- **`graph_demo.py`**: Main application using modular components
+- **`common/config.py`**: Environment and configuration management with validation
+- **`common/nasa_search.py`**: RAG implementation for NASA document search
+- **`common/mcp_client.py`**: MCP (Model Context Protocol) integration with async/sync bridge
+- **`common/agent_factory.py`**: Factory for creating configured AI agents
+- **`common/thinking_spinner.py`**: UI components with threading support
 - **`ingest.py`**: PDF processing and vector database creation
 - **`debug_embeddings.py`**: Comprehensive embedding pipeline testing
 - **`test_retrieval.py`**: Query testing and validation
 - **`chroma_db/`**: Vector database storage
 - **`data/`**: Source PDF documents
 
-### LangGraph Workflow
+### Agent Architecture (React Pattern)
 
 ```
-┌───────────┐
-│ __start__ │
-└─────┬─────┘
+┌─────────────┐
+│ User Query  │
+└─────┬───────┘
       │
-┌─────▼─────┐
-│ retrieve  │  ◀── Semantic search in vector DB
-└─────┬─────┘
+┌─────▼───────┐
+│ React Agent │ ◀── LangChain create_react_agent
+└─────┬───────┘
       │
-┌─────▼─────┐
-│ generate  │  ◀── LLM generates executive response
-└─────┬─────┘
-      │
-┌─────▼─────┐
-│ __end__   │
-└───────────┘
+┌─────▼───────┐    ┌─────────────┐    ┌─────────────┐
+│    Tools    │◀──▶│ NASA Search │ +  │ MCP Tools   │
+└─────┬───────┘    └─────────────┘    └─────────────┘
+      │                    │                  │
+┌─────▼───────┐    ┌─────▼─────┐    ┌─────▼─────┐
+│  Response   │    │Vector DB  │    │File System│
+└─────────────┘    └───────────┘    └───────────┘
 ```
+
+### Design Patterns Used
+
+- **Singleton Pattern**: Configuration and client instances
+- **Factory Pattern**: Agent creation with different tool configurations  
+- **Adapter Pattern**: Async/sync bridge for MCP integration
+- **Strategy Pattern**: Different tool sets based on MCP server availability
+- **Template Method**: Standardized agent creation workflow
+- **Command Pattern**: User queries processed through agent invocation
 
 ## 🔍 Debugging & Troubleshooting
 
@@ -592,7 +675,7 @@ make debug-env
 .
 ├── graph_demo.py           # Main application
 ├── ingest.py              # Document processing
-├── fetch_nasa_data.py     # NASA document downloader
+├── fetch_nasa_data.py     # NASA document downloader  
 ├── debug_embeddings.py    # Embedding diagnostics
 ├── test_retrieval.py      # Query testing
 ├── requirements.txt       # Python dependencies
@@ -600,9 +683,14 @@ make debug-env
 ├── Dockerfile            # Docker container configuration
 ├── docker-compose.yaml   # Docker Compose configuration
 ├── .env                  # Configuration (create from .env.example)
-├── common/               # Shared utilities
-│   ├── __init__.py       # Package initialization
-│   └── thinking_spinner.py # ASCII animation for thinking state
+├── common/               # Modular architecture components
+│   ├── __init__.py       # Package exports (38 lines)
+│   ├── README.md         # Architecture documentation
+│   ├── config.py         # Environment & configuration (88 lines)
+│   ├── nasa_search.py    # RAG implementation (87 lines)
+│   ├── mcp_client.py     # MCP integration (138 lines)
+│   ├── agent_factory.py  # Agent creation (79 lines)
+│   └── thinking_spinner.py # UI components (67 lines)
 ├── data/                 # Source PDF documents (auto-downloaded)
 │   ├── nasa_se_handbook.pdf
 │   ├── artemis_i_press_kit.pdf
@@ -614,9 +702,19 @@ make debug-env
 ### Adding New Features
 
 1. **New Document Types**: Modify `ingest.py` to support additional formats
-2. **Custom Prompts**: Update `graph_demo.py` generation templates
-3. **Additional Tools**: Extend LangGraph workflow with new nodes
-4. **Monitoring**: Add metrics collection to existing debug tools
+2. **Custom Prompts**: Update `common/nasa_search.py` prompt templates
+3. **Additional Tools**: Add new tools to `common/agent_factory.py` tool list
+4. **New Integrations**: Extend `common/mcp_client.py` for additional MCP servers
+5. **Configuration**: Add new settings to `common/config.py` environment management
+6. **Monitoring**: Add metrics collection to existing debug tools
+
+### Modular Architecture Benefits
+
+- **Single Responsibility**: Each module has one clear purpose
+- **Testability**: Components can be unit tested independently  
+- **Reusability**: Common modules can be used in other projects
+- **Maintainability**: Changes are isolated to specific components
+- **Scalability**: Easy to add new features without modifying existing code
 
 ### Testing
 
@@ -678,12 +776,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **OpenAI**: For powerful embedding and generation capabilities
 - **Chroma**: For efficient vector database operations
 
----
-
-## 📞 Support
-
-- **Issues**: [GitHub Issues](https://github.com/your-repo/issues)
-- **Documentation**: This README and inline code comments
-
----
 
