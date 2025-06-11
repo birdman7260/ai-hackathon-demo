@@ -55,7 +55,7 @@ class AppConfig:
         ENVIRONMENT VARIABLES LOADED:
         - OPENAI_API_KEY: Required for LLM and embedding operations
         - MCP_SERVER_URLS: Optional, comma-separated list of MCP server URLs
-        - OPENAI_MODEL: Optional, defaults to "gpt-4o-mini"
+        - OPENAI_MODEL: Optional, defaults to "gpt-4.1"
         - EMBEDDING_MODEL: Optional, defaults to "text-embedding-3-small"
         - VECTORDB_PATH: Optional, defaults to "./chroma_db"
         - RECURSION_LIMIT: Optional, defaults to 25
@@ -73,7 +73,7 @@ class AppConfig:
         
         # MODEL CONFIGURATION
         # AI model settings with sensible defaults for cost/performance balance
-        self.default_model = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+        self.default_model = os.getenv("OPENAI_MODEL", "gpt-4.1")
         self.embedding_model = os.getenv("EMBEDDING_MODEL", "text-embedding-3-small")
         
         # DATABASE CONFIGURATION
@@ -89,7 +89,7 @@ class AppConfig:
             self.recursion_limit = 25  # Fallback if env var is not a valid integer
             
         try:
-            self.temperature = float(os.getenv("TEMPERATURE", "0"))
+            self.temperature = float(os.getenv("TEMPERATURE", "0.2"))
         except ValueError:
             self.temperature = 0.0  # Fallback if env var is not a valid float
         

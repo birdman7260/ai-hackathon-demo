@@ -52,7 +52,7 @@ class NASADocumentSearch:
     faster application startup times.
     """
     
-    def __init__(self, db_path: str = "./chroma_db", model: str = "gpt-4o-mini"):
+    def __init__(self, db_path: str = "./chroma_db", model: str = "gpt-4.1"):
         """
         Initialize NASA search with configurable paths and models.
         
@@ -106,7 +106,7 @@ class NASADocumentSearch:
             ChatOpenAI instance configured for response generation
             
         MODEL SELECTION:
-        Uses gpt-4o-mini by default for optimal cost/performance:
+        Uses gpt-4.1 by default for optimal cost/performance:
         - Sufficient capability for executive summaries
         - Lower cost than GPT-4 for high-volume usage  
         - Fast response times for interactive applications

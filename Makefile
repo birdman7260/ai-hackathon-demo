@@ -207,7 +207,7 @@ test-retrieval:
 test-components:
 	@echo "🧩 Testing individual components..."
 	@echo "1. Testing OpenAI connection..."
-	@source .venv/bin/activate && python -c "from langchain_openai import ChatOpenAI; from dotenv import load_dotenv; load_dotenv(override=True); llm = ChatOpenAI(model='gpt-4o-mini'); response = llm.invoke('Hello, respond with just OK'); print(f'✅ LLM Response: {response.content}')"
+	@source .venv/bin/activate && python -c "from langchain_openai import ChatOpenAI; from dotenv import load_dotenv; load_dotenv(override=True); llm = ChatOpenAI(model='gpt-4.1'); response = llm.invoke('Hello, respond with just OK'); print(f'✅ LLM Response: {response.content}')"
 	@echo ""
 	@echo "2. Testing embeddings..."
 	@source .venv/bin/activate && python -c "from langchain_openai import OpenAIEmbeddings; from dotenv import load_dotenv; load_dotenv(override=True); embedder = OpenAIEmbeddings(model='text-embedding-3-small'); embedding = embedder.embed_query('test'); print(f'✅ Embedding dimensions: {len(embedding)}')"

@@ -28,7 +28,7 @@
 
 ## 🎯 Overview
 
-This system transforms NASA's technical documentation into an interactive Q&A interface designed for executives and technical leaders. Built with LangChain's React agent pattern and OpenAI's GPT-4o-mini, it provides accurate, contextual answers by intelligently retrieving relevant information from processed NASA documents. The system features optional MCP (Model Context Protocol) integration for enhanced filesystem capabilities and follows a clean 5-layer modular architecture.
+This system transforms NASA's technical documentation into an interactive Q&A interface designed for executives and technical leaders. Built with LangChain's React agent pattern and OpenAI's GPT-4.1, it provides accurate, contextual answers by intelligently retrieving relevant information from processed NASA documents. The system features optional MCP (Model Context Protocol) integration for enhanced filesystem capabilities and follows a clean 5-layer modular architecture.
 
 ### What Problems Does This Solve?
 
@@ -40,7 +40,7 @@ This system transforms NASA's technical documentation into an interactive Q&A in
 ### Why This Technology Stack?
 
 - **LangChain**: Provides robust document processing, retrieval pipelines, and React agent framework
-- **OpenAI GPT-4o-mini**: Delivers high-quality, cost-effective text generation and embeddings
+- **OpenAI GPT-4.1**: Delivers high-quality, cost-effective text generation and embeddings
 - **Chroma Vector Database**: Enables semantic search across document chunks
 - **MCP (Model Context Protocol)**: Optional integration for filesystem and external tool access
 - **React Agent Pattern**: Intelligent reasoning and tool selection for complex queries

@@ -56,18 +56,18 @@ class AgentFactory:
     - Template Method: Consistent agent creation flow
     """
     
-    def __init__(self, model: str = "gpt-4o-mini", temperature: float = 0):
+    def __init__(self, model: str = "gpt-4.1", temperature: float = 0.0):
         """
         Initialize agent factory with model configuration.
         
         Args:
-            model: OpenAI model name (e.g., "gpt-4o-mini", "gpt-4")
+            model: OpenAI model name (e.g., "gpt-4o-mini", "gpt-4.1")
             temperature: Response randomness (0=deterministic, 1=creative)
             
         MODEL SELECTION STRATEGY:
-        - gpt-4o-mini: Default choice for cost/performance balance
+        - gpt-4.1: Default choice for cost/performance balance
         - gpt-4: For complex reasoning tasks requiring higher capability
-        - Temperature 0: Ensures consistent, reproducible responses
+        - Temperature 0.2: Some creativity but not too much
         
         FACTORY CONFIGURATION:
         The factory stores model parameters but defers expensive operations
@@ -196,7 +196,7 @@ Use the nasa_document_search tool to answer questions about NASA missions, engin
 Always provide executive-level, detailed responses based on the NASA documentation."""
 
 
-def create_nasa_agent(include_mcp: bool = True, model: str = "gpt-4o-mini"):
+def create_nasa_agent(include_mcp: bool = True, model: str = "gpt-4.1"):
     """
     Convenience function for creating NASA Q&A agents.
     
