@@ -81,6 +81,8 @@ You can run the NASA Q&A system either locally with Python or using Docker. Choo
 - **🐍 Local Python Setup**: Full development capabilities with debugging tools
 - **🐳 Docker Setup**: Isolated environment, consistent deployment (see [Docker Deployment](#-docker-deployment))
 
+> **💡 Pro Tip**: Get your OpenAI API key from [platform.openai.com/account/api-keys](https://platform.openai.com/account/api-keys)
+
 ### Quick Setup (Recommended)
 
 ```bash
@@ -88,11 +90,27 @@ You can run the NASA Q&A system either locally with Python or using Docker. Choo
 git clone https://github.com/driches/ai-hackathon-demo
 cd hackathon-demo
 
-# 2. Run the automated setup script
-./setup.sh
-
-# 3. Edit your API key in the .env file
+# 2. Edit your API key in the .env file
 # Replace 'your_openai_api_key_here' with your actual OpenAI API key
+cp .env.example .env
+nano .env  # or use your preferred editor
+
+# 3. Build Docker Container
+make docker-build
+
+# 4. Start Chat
+make docker-interactive
+
+
+```
+### Local Setup
+```bash 
+# 1. Run the automated setup script
+make setup
+
+# 2. Edit your API key in the .env file
+# Replace 'your_openai_api_key_here' with your actual OpenAI API key
+cp .env.example .env
 nano .env  # or use your preferred editor
 ```
 
@@ -106,51 +124,9 @@ source ./activate.sh
 source .venv/bin/activate
 ```
 
-### Manual Setup (Alternative)
-
-If you prefer manual setup or encounter issues:
-
-```bash
-# Create virtual environment
-python3 -m venv .venv
-
-# Activate environment
-source .venv/bin/activate  # macOS/Linux
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Create .env file from example
-cp .env.example .env
-# Then edit .env with your OpenAI API key
-```
-
-## ⚙️ Configuration
-
-### 1. Set Your OpenAI API Key
-
-After running `./setup.sh`, edit the `.env` file:
-
-```bash
-# Edit the .env file created by setup
-nano .env  # or code .env, vim .env, etc.
-
-# Update this line with your actual API key:
-OPENAI_API_KEY=sk-your-actual-openai-api-key-here
-
-# Optional: MCP server URLs for filesystem integration (leave empty to disable)
-# Format: comma-separated URLs of running MCP servers  
-# Example: MCP_SERVER_URLS=http://127.0.0.1:8000/mcp/
-MCP_SERVER_URLS=
-```
-
-> **💡 Pro Tip**: Get your OpenAI API key from [platform.openai.com/account/api-keys](https://platform.openai.com/account/api-keys)
-
 ### 2. Verify Setup
 
 ```bash
-# Activate environment (if not already active)
-source ./activate.sh
 
 # Test your configuration
 make debug-env
@@ -161,22 +137,6 @@ make debug-env
 # ✅ Virtual environment active
 ```
 
-### 3. Download and Ingest NASA Documents
-
-```bash
-# First, download the NASA documents
-make fetch-data
-
-# Then process the PDFs into the vector database
-make ingest
-
-# Verify the vector database
-make debug-vectordb
-
-# Expected output:
-# 📈 Documents: 361
-# 📝 Collection: langchain
-```
 
 ## 🎮 Usage
 
@@ -185,20 +145,16 @@ make debug-vectordb
 #### 1. Complete Setup
 
 ```bash
-# Run the setup script and configure your API key
-make setup
-nano .env  # Add your OpenAI API key
 
 # Activate environment, download data, and ingest documents
 source ./activate.sh
 make fetch-data
 make ingest
 
-# 1. Configure MCP in your .env file
-# This is usually done once
-echo "MCP_SERVER_URLS=http://127.0.0.1:8000/mcp/" >> .env
+# Verify the vector database
+make debug-vectordb
 
-# 2. Start an MCP server
+# Start an MCP server
 make mcp-http 
 
 ```
