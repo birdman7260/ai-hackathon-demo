@@ -53,10 +53,10 @@ def test_vector_database():
         
         # Test retrieval with different queries
         test_queries = [
-            "NASA risk management",
-            "technical risk mitigation", 
-            "systems engineering",
-            "Artemis mission"
+            "CA DEQ risk management",
+            "air quality monitoring", 
+            "environmental justice",
+            "California water action"
         ]
         
         for query in test_queries:
