@@ -15,7 +15,7 @@ echo "✅ Packages installed successfully"
 echo "🔧 Setting up environment file..."
 if [ ! -f .env ]; then
   echo "OPENAI_API_KEY=your_openai_api_key_here" > .env
-  echo "MCP_SERVER_URLS=http://localhost:3000" >> .env
+  echo "MCP_SERVER_URLS=http://127.0.0.1:8000/mcp/" >> .env
   echo "✅ Created .env file"
   echo "⚠️  IMPORTANT: Please edit your .env file to add your OPENAI_API_KEY"
 else

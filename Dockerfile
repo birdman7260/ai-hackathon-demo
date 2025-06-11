@@ -17,5 +17,9 @@ ENV MCP_SERVER_URLS=${MCP_SERVER_URLS}
 # Download NASA documents and create vector database during build
 RUN python fetch_nasa_data.py && python ingest.py
 
-# Default command is just the interactive Q&A system
-CMD ["python", "graph_demo.py"]
+# Copy and make startup script executable
+COPY start.sh .
+RUN chmod +x start.sh
+
+# Use startup script that handles MCP server and main app
+CMD ["./start.sh"]

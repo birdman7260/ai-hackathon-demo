@@ -113,7 +113,7 @@ class ThinkingSpinner:
         while not self.stop_event.is_set():
             # Display current spinner frame with thinking message
             # \r returns cursor to start of line for in-place update
-            sys.stdout.write(f"\r🤔 Thinking... {spinner_chars[i % len(spinner_chars)]}")
+            sys.stdout.write(f"\r{self.frames[i % len(self.frames)]}{spinner_chars[i % len(spinner_chars)]}")
             sys.stdout.flush()  # Force immediate output to terminal
             
             # Advance to next spinner character

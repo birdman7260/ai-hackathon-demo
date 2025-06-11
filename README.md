@@ -186,19 +186,30 @@ make debug-vectordb
 
 ```bash
 # Run the setup script and configure your API key
-./setup.sh
+make setup
 nano .env  # Add your OpenAI API key
 
 # Activate environment, download data, and ingest documents
 source ./activate.sh
 make fetch-data
 make ingest
+
+# 1. Configure MCP in your .env file
+# This is usually done once
+echo "MCP_SERVER_URLS=http://127.0.0.1:8000/mcp/" >> .env
+
+# 2. Start an MCP server
+make mcp-http 
+
 ```
 
 #### 2. Start Asking Questions
 
 ```bash
-# Launch the Q&A system
+# To run with MCP tools (if configured in .env)
+make run
+
+# To run without MCP tools
 make run-no-mcp
 
 # You'll see the prompt:
@@ -298,11 +309,13 @@ MCP (Model Context Protocol) is a protocol that allows AI agents to interact wit
 #### Running with MCP
 
 ```bash
-# 1. Start an MCP server (example using filesystem server)
-# This would typically run on http://127.0.0.1:8000/mcp/
 
-# 2. Configure MCP in your .env file
+# 1. Configure MCP in your .env file
+# This is usually done once
 echo "MCP_SERVER_URLS=http://127.0.0.1:8000/mcp/" >> .env
+
+# 2. Start an MCP server
+make mcp-http 
 
 # 3. Run the application with MCP support
 make run
@@ -504,11 +517,11 @@ The system follows a modular, clean architecture pattern with distinct layers:
 2. **Data Layer** (`common/nasa_search.py`): Vector database and document retrieval  
 3. **Integration Layer** (`common/mcp_client.py`): External MCP server connections
 4. **Agent Layer** (`common/agent_factory.py`): AI agent creation and configuration
-5. **Presentation Layer** (`graph_demo.py`): User interface and interaction
+5. **Presentation Layer** (`main.py`): User interface and interaction
 
 ### Key Components
 
-- **`graph_demo.py`**: Main application using modular components
+- **`main.py`**: Main application using modular components
 - **`common/config.py`**: Environment and configuration management with validation
 - **`common/nasa_search.py`**: RAG implementation for NASA document search
 - **`common/mcp_client.py`**: MCP (Model Context Protocol) integration with async/sync bridge
@@ -673,7 +686,7 @@ make debug-env
 
 ```
 .
-├── graph_demo.py           # Main application
+├── main.py                # Main application
 ├── ingest.py              # Document processing
 ├── fetch_nasa_data.py     # NASA document downloader  
 ├── debug_embeddings.py    # Embedding diagnostics

@@ -65,12 +65,12 @@ ingest:
 # Run the application
 run:
 	@echo "Running the application..."
-	source .venv/bin/activate && python graph_demo.py
+	source .venv/bin/activate && python main.py
 
 # Run the application without MCP to avoid connection errors
 run-no-mcp:
 	@echo "Running the application without MCP..."
-	source .venv/bin/activate && MCP_SERVER_URLS="" python graph_demo.py
+	source .venv/bin/activate && MCP_SERVER_URLS="" python main.py
 
 
 
@@ -107,7 +107,8 @@ mcp-test:
 # Stop all running MCP processes
 mcp-stop:
 	@echo "🛑 Stopping all MCP processes..."
-	@pkill -f fastmcp || echo "No MCP processes running"
+	@pkill -f "fastmcp|uvicorn.*mcp_filesystem" || echo "No MCP-related processes running"
+	lsof -ti:8000 | xargs kill -9 2>/dev/null || echo "✅ Port 8000 is now free"
 	@echo "✅ MCP processes stopped"
 
 # Check MCP server status and ports
@@ -176,7 +177,7 @@ debug-vectordb:
 # Show graph structure and execution flow
 debug-graph:
 	@echo "🔗 Analyzing graph structure..."
-	source .venv/bin/activate && python -c "from graph_demo import chain; print('Graph nodes and edges:'); chain.get_graph().print_ascii()"
+	source .venv/bin/activate && python -c "from main import chain; print('Graph nodes and edges:'); chain.get_graph().print_ascii()"
 
 # Test PDF ingestion process
 debug-ingest:
