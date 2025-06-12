@@ -725,6 +725,10 @@ make test-retrieval
 - Update documentation for new features
 - Test all changes with `make debug`
 
+### Project Blueprint business case
+The business case can be found at the following URL: https://abbott-my.sharepoint.com/:p:/p/roxanne_holakuyee/EVzOm-CrGOFPmhMKqp1647sBI5WIkqiUbeDLVeiGSJHdgA?e=L57YYW
+
+
 ### Reporting Issues
 
 When reporting issues, please include:
