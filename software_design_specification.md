@@ -1,42 +1,73 @@
-# Software Design Specification
+# Software Design Specification (SDS)
 
 ## 1. Overview
 
-**Project Name:** NASA Document Q&A System  
-**Purpose:**  
-An intelligent question-answering system that provides executive-level insights from NASA technical documents. It leverages LangChain, OpenAI GPT-4, and a Chroma vector database to enable semantic search and retrieval-augmented generation (RAG) over NASA PDFs. Optional integration with the Model Context Protocol (MCP) allows for advanced filesystem and tool operations.
-
----
+The CA DEQ Document Q&A System is an intelligent, modular application that enables executive-level question answering over California Department of Environmental Quality (CalEPA) studies and reports. It leverages LangChain, OpenAI LLMs, and Chroma vector database, with optional integration of Model Context Protocol (MCP) for external tool access.
 
 ## 2. System Architecture
 
-### 2.1 High-Level Flow
+### 2.1 Layered Architecture
 
-┌─────────────┐    ┌──────────────┐    ┌─────────────┐
-│  PDF Docs   │───▶│   Ingestion  │───▶│  Vector DB  │
-└─────────────┘    └──────────────┘    └─────────────┘
-                                              │
-┌─────────────┐    ┌──────────────┐    ┌─────▼─────┐
-│   Response  │◀───│  AI Agent    │◀───│ Retrieval │
-└─────────────┘    └──────────────┘    └───────────┘
-                           ▲                  ▲
-                    ┌──────▼──────┐    ┌──────▼──────┐
-                    │ User Query  │    │ MCP Tools   │
-                    └─────────────┘    └─────────────┘ 
+The system follows a clean, 5-layer modular architecture:
 
-### 2.2 Layered Architecture
+1. **Configuration Layer** (`common/config.py`): Loads and validates environment variables and settings.
+2. **Data Layer** (`common/cadeq_search.py`): Manages vector database and document retrieval for CA DEQ studies.
+3. **Integration Layer** (`common/mcp_client.py`): Handles optional MCP server connections for external tools.
+4. **Agent Layer** (`common/agent_factory.py`): Creates and configures AI agents with CA DEQ and optional MCP tools.
+5. **Presentation Layer** (`main.py`): Provides user interface and interaction.
 
-The system follows a **5-layer clean architecture**:
+### 2.2 Data Flow
 
-1. **Configuration Layer** (`common/config.py`): Loads and validates environment variables, manages configuration.
-2. **Data Layer** (`common/nasa_search.py`): Handles vector database, document ingestion, and semantic search.
-3. **Integration Layer** (`common/mcp_client.py`): Manages optional MCP server connections for external tool access.
-4. **Agent Layer** (`common/agent_factory.py`): Creates and configures AI agents with appropriate tools.
-5. **Presentation Layer** (`main.py`): User interface and interaction loop.
+- User submits a question via the CLI (`main.py`).
+- The agent (from `common/agent_factory.py`) receives the query and determines which tools to use.
+- The CA DEQ document search tool (`common/cadeq_search.py`) performs semantic search and retrieval over embedded CA DEQ/CalEPA studies.
+- The agent synthesizes an executive-level answer using the retrieved context and the LLM.
+- The answer is returned to the user.
+
+## 3. Key Features
+
+- PDF ingestion and vectorization of CA DEQ/CalEPA studies
+- Semantic search and retrieval
+- Executive summary generation
+- Optional filesystem tool integration via MCP
+- Modular, clean 5-layer architecture
+
+## 4. External Dependencies
+
+- LangChain
+- OpenAI API
+- Chroma vector database
+- Requests, dotenv, etc.
+
+## 5. Document Sources
+
+The system uses the following CA DEQ/CalEPA studies and reports as its knowledge base:
+
+- 2014 Annual Report on the Air Resources Board's Fine Particulate Matter Monitoring Program
+- Indicators of Climate Change in California (2013)
+- California Water Action Plan
+- 2019 CalEPA Enforcement Report
+- Environmental Justice Program Update (2016)
+- Improving Public and Worker Safety at Oil Refineries (2014)
+- Draft California Communities Environmental Health Screening Tool Report (CalEnviroScreen 2.0)
+- 2013 Annual Report on the Air Resources Board's Fine Particulate Matter Monitoring Program
+- A Report To The California Legislature on the Potential Health and Environmental Impacts of Leaf Blowers
+- Source apportionment of fine and ultrafine particles in California
+
+## 6. Security and Privacy
+
+- All documents are public CA DEQ/CalEPA reports.
+- No user data is stored.
+
+## 7. Future Improvements
+
+- Add support for additional CA DEQ/CalEPA document types.
+- Enhance prompt engineering for more nuanced executive summaries.
+- Integrate with more advanced retrieval and summarization models as they become available.
 
 ---
 
-## 3. Key Components
+## 8. Key Components
 
 | File/Module                | Responsibility                                                                 |
 |----------------------------|-------------------------------------------------------------------------------|
@@ -44,9 +75,9 @@ The system follows a **5-layer clean architecture**:
 | `ingest.py`                | Processes PDF documents, creates vector database                              |
 | `fetch_nasa_data.py`       | Downloads NASA PDFs                                                           |
 | `common/config.py`         | Loads and validates environment/configuration                                 |
-| `common/nasa_search.py`    | Implements RAG: vector search + LLM synthesis                                |
+| `common/cadeq_search.py`   | Implements RAG: vector search + LLM synthesis                                |
 | `common/mcp_client.py`     | Integrates with MCP servers (filesystem/tools)                                |
-| `common/agent_factory.py`  | Factory for creating agents with NASA/MCP tools                               |
+| `common/agent_factory.py`  | Factory for creating agents with CA DEQ and optional MCP tools                   |
 | `common/thinking_spinner.py`| Terminal spinner for user feedback during processing                         |
 | `debug_embeddings.py`      | Embedding pipeline diagnostics                                                |
 | `test_retrieval.py`        | Retrieval and query testing                                                   |
@@ -57,9 +88,9 @@ The system follows a **5-layer clean architecture**:
 
 ---
 
-## 4. Core Workflows
+## 9. Core Workflows
 
-### 4.1 Document Ingestion
+### 9.1 Document Ingestion
 
 - **Input:** NASA PDF documents (auto-downloaded or user-supplied)
 - **Process:**  
@@ -68,7 +99,7 @@ The system follows a **5-layer clean architecture**:
   - Embeddings are stored in a Chroma vector database.
 - **Output:** Vector DB ready for semantic search.
 
-### 4.2 Question Answering
+### 9.2 Question Answering
 
 - **Input:** User query (via terminal)
 - **Process:**  
@@ -77,7 +108,7 @@ The system follows a **5-layer clean architecture**:
   - If MCP is enabled, agent can also use filesystem/tools as needed.
 - **Output:** Executive-level answer, shown in terminal.
 
-### 4.3 Optional MCP Integration
+### 9.3 Optional MCP Integration
 
 - **Purpose:** Allows the agent to perform filesystem operations (read/write/list files) via MCP servers.
 - **Design:**  
@@ -86,7 +117,7 @@ The system follows a **5-layer clean architecture**:
 
 ---
 
-## 5. Design Patterns
+## 10. Design Patterns
 
 - **Singleton:** For configuration and client instances.
 - **Factory:** For agent and tool creation.
@@ -97,17 +128,17 @@ The system follows a **5-layer clean architecture**:
 
 ---
 
-## 6. Extensibility & Modularity
+## 11. Extensibility & Modularity
 
 - **Add new document types:** Extend `ingest.py`.
-- **Custom prompts:** Update `common/nasa_search.py`.
+- **Custom prompts:** Update `common/cadeq_search.py`.
 - **New tools/integrations:** Add to `common/agent_factory.py` and `common/mcp_client.py`.
 - **Configuration:** Centralized in `common/config.py`.
 - **Testing:** Modular components allow for unit and integration testing.
 
 ---
 
-## 7. Deployment
+## 12. Deployment
 
 - **Local:**  
   - Python 3.13+, OpenAI API key required.
@@ -118,7 +149,7 @@ The system follows a **5-layer clean architecture**:
 
 ---
 
-## 8. Quality & Testing
+## 13. Quality & Testing
 
 - **Type hints** and **docstrings** throughout.
 - **Comprehensive error handling** and user feedback.
@@ -127,7 +158,7 @@ The system follows a **5-layer clean architecture**:
 
 ---
 
-## 9. Example Usage
+## 14. Example Usage
 
 - **Start Q&A:**  
   - `make run` (with MCP) or `make run-no-mcp` (without MCP)
@@ -137,7 +168,7 @@ The system follows a **5-layer clean architecture**:
 
 ---
 
-## 10. Summary
+## 15. Summary
 
 This system is a robust, modular, and extensible Q&A platform for NASA documents, designed for both executive and technical users. It combines state-of-the-art LLMs, semantic search, and optional tool integration, following best practices in software architecture and design.
 

@@ -17,10 +17,10 @@ def test_retrieval():
     )
     
     test_queries = [
-        'NASA risk management', 
-        'Artemis mission', 
-        'systems engineering', 
-        'technical requirements'
+        'CA DEQ risk management', 
+        'air quality monitoring', 
+        'environmental justice', 
+        'California water action'
     ]
     
     print('Testing retrieval with sample queries:')

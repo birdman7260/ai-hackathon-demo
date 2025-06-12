@@ -28,7 +28,7 @@ User Input → Configuration Loading → Agent Creation → Tool Integration →
 from langchain_core.messages import HumanMessage
 from common import (
     ThinkingSpinner,     # UI component for loading animations
-    create_nasa_agent,   # Factory function for creating configured agents
+    create_cadeq_agent,   # Factory function for creating configured agents
     load_environment     # Configuration loading and validation
 )
 
@@ -49,8 +49,8 @@ def main():
     - Error isolation: Catches and handles errors without crashing
     - User experience: Provides clear feedback and status information
     """
-    print("🚀 NASA Document Q&A System")
-    print("Ask questions about NASA documents. Type 'quit', 'exit', or 'q' to stop.")
+    print("🌎 CA DEQ Document Q&A System")
+    print("Ask questions about California DEQ (CalEPA) documents. Type 'quit', 'exit', or 'q' to stop.")
     print("=" * 60)
     
     # CONFIGURATION PHASE
@@ -61,10 +61,10 @@ def main():
     
     # AGENT CREATION PHASE  
     # Create an AI agent with the appropriate tools based on configuration
-    # - Always includes NASA document search capability
+    # - Always includes CA DEQ document search capability
     # - Conditionally includes MCP filesystem tools if servers are available
     # - Uses environment-specified model (default: gpt-4.1)
-    agent = create_nasa_agent(
+    agent = create_cadeq_agent(
         include_mcp=agent_config["include_mcp"],  # MCP tools if servers configured
         model=agent_config["model"]               # AI model from environment
     )

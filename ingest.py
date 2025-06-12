@@ -1,7 +1,7 @@
 # =============================================================================
-# NASA Document Ingestion Pipeline
+# CA DEQ Document Ingestion Pipeline
 # =============================================================================
-# This script processes NASA PDF documents into a searchable vector database.
+# This script processes CA DEQ PDF documents into a searchable vector database.
 # It extracts text from PDFs, splits them into manageable chunks, and creates
 # embeddings using OpenAI's embedding model for semantic search capabilities.
 # =============================================================================
@@ -30,10 +30,10 @@ load_dotenv(override=True)
 # Find all PDF files in the data directory for processing
 # Uses pathlib.Path.glob() for cross-platform file discovery
 
-print("📄 Discovering PDF documents...")
+print("📄 Discovering CA DEQ PDF documents...")
 pdfs = Path("data").glob("*.pdf")
 pdf_list = list(pdfs)  # Convert to list to check count
-print(f"📋 Found {len(pdf_list)} PDF files to process")
+print(f"📋 Found {len(pdf_list)} CA DEQ PDF files to process")
 
 # =============================================================================
 # DOCUMENT LOADING
@@ -42,7 +42,7 @@ print(f"📋 Found {len(pdf_list)} PDF files to process")
 # PyPDFLoader handles the PDF parsing and text extraction
 
 docs = []
-print("📖 Loading and extracting text from PDFs...")
+print("📖 Loading and extracting text from CA DEQ PDFs...")
 
 for pdf in pdf_list:
     print(f"   📄 Processing: {pdf.name}")
@@ -55,7 +55,7 @@ for pdf in pdf_list:
     # Each page becomes a separate document with metadata
     docs.extend(loader.load())
 
-print(f"✅ Loaded {len(docs)} pages from {len(pdf_list)} PDF files")
+print(f"✅ Loaded {len(docs)} pages from {len(pdf_list)} CA DEQ PDF files")
 
 # =============================================================================
 # TEXT CHUNKING
@@ -63,7 +63,7 @@ print(f"✅ Loaded {len(docs)} pages from {len(pdf_list)} PDF files")
 # Split large documents into smaller, semantically meaningful chunks
 # This improves retrieval accuracy and fits within LLM context windows
 
-print("✂️  Splitting documents into searchable chunks...")
+print("✂️  Splitting CA DEQ documents into searchable chunks...")
 
 # Initialize the text splitter with optimized settings
 # RecursiveCharacterTextSplitter preserves semantic boundaries (paragraphs, sentences)
@@ -76,7 +76,7 @@ text_splitter = RecursiveCharacterTextSplitter(
 
 # Split all documents into chunks
 chunks = text_splitter.split_documents(docs)
-print(f"📋 Created {len(chunks)} searchable chunks")
+print(f"📋 Created {len(chunks)} searchable CA DEQ chunks")
 
 # =============================================================================
 # VECTOR DATABASE CREATION
@@ -84,7 +84,7 @@ print(f"📋 Created {len(chunks)} searchable chunks")
 # Create embeddings for each chunk and store in Chroma vector database
 # This enables semantic search based on meaning rather than just keywords
 
-print("🧠 Creating embeddings and building vector database...")
+print("🧠 Creating embeddings and building CA DEQ vector database...")
 print("   (This may take a few minutes for large document collections)")
 
 # Create vector database with OpenAI embeddings
@@ -97,7 +97,7 @@ vectordb = Chroma.from_documents(
     persist_directory="./chroma_db"                            # Local storage location
 )
 
-print(f"✅ Vector database created successfully!")
-print(f"📊 Database contains {len(chunks)} embedded document chunks")
+print(f"✅ CA DEQ vector database created successfully!")
+print(f"📊 Database contains {len(chunks)} embedded CA DEQ document chunks")
 print(f"💾 Database persisted to: ./chroma_db")
-print("\n🎉 Document ingestion complete! Ready for Q&A queries.")
+print("\n🎉 CA DEQ document ingestion complete! Ready for Q&A queries.")

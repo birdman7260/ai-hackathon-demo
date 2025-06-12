@@ -29,7 +29,7 @@ from typing import List
 from langchain_openai import ChatOpenAI
 from langgraph.prebuilt import create_react_agent
 from .mcp_client import get_mcp_tools
-from .nasa_search import get_nasa_search_tool
+from .cadeq_search import get_cadeq_search_tool
 
 
 class AgentFactory:
@@ -106,17 +106,17 @@ class AgentFactory:
         - Termination: Agent provides final answer when task complete
         """
         # TOOL DISCOVERY PHASE
-        # Start with core NASA document search capability
-        tools = [get_nasa_search_tool()]
+        # Start with core CA DEQ document search capability
+        tools = [get_cadeq_search_tool()]
         
         # Add MCP tools if requested and available
         mcp_tools = get_mcp_tools() if include_mcp else []
         
         if mcp_tools:
             tools.extend(mcp_tools)
-            print(f"🔧 Agent created with {len(mcp_tools)} MCP tools + NASA search")
+            print(f"🔧 Agent created with {len(mcp_tools)} MCP tools + CA DEQ search")
         else:
-            print("🔧 Agent created with NASA search only")
+            print("🔧 Agent created with CA DEQ search only")
         
         # MODEL CONFIGURATION PHASE
         # Configure LLM with specified parameters
@@ -170,53 +170,53 @@ class AgentFactory:
         - Concise, high-impact communication style
         """
         if has_mcp_tools:
-            return """You are a helpful AI assistant with access to NASA documents and filesystem tools.
+            return """You are a helpful AI assistant with access to CA DEQ (CalEPA) documents and filesystem tools.
 
 TOOLS AVAILABLE:
-• nasa_document_search: For questions about NASA missions, engineering, policies, and space exploration
+• cadeq_document_search: For questions about California environmental quality, air, water, policy, and related topics
 • list_directory: List contents of a directory (use with specific path like "." for current directory)
 • read_file: Read contents of text files
 • search_files: Search for files by pattern in a directory
 • get_file_info: Get detailed information about files
 
 USAGE GUIDELINES:
-- For NASA/space questions: Use nasa_document_search
+- For CA DEQ/environmental questions: Use cadeq_document_search
 - For filesystem operations: Use the MCP tools explicitly
 - Be proactive in using the appropriate tools
 - Always provide helpful, detailed responses
 
 Examples:
-- "What are NASA's risk strategies?" → Use nasa_document_search
+- "What are California's air quality risk strategies?" → Use cadeq_document_search
 - "List current directory" → Use list_directory with path "."
 - "Read README file" → Use read_file with file path"""
         else:
-            return """You are a helpful AI assistant with access to NASA documents.
+            return """You are a helpful AI assistant with access to CA DEQ (CalEPA) documents.
 
-Use the nasa_document_search tool to answer questions about NASA missions, engineering, policies, and space exploration.
-Always provide executive-level, detailed responses based on the NASA documentation."""
+Use the cadeq_document_search tool to answer questions about California environmental quality, air, water, policy, and related topics.
+Always provide executive-level, detailed responses based on the CA DEQ documentation."""
 
 
-def create_nasa_agent(include_mcp: bool = True, model: str = "gpt-4.1"):
+def create_cadeq_agent(include_mcp: bool = True, model: str = "gpt-4.1"):
     """
-    Convenience function for creating NASA Q&A agents.
+    Convenience function for creating CA DEQ Q&A agents.
     
     Args:
         include_mcp: Whether to include MCP filesystem tools
         model: OpenAI model name for the agent
         
     Returns:
-        Configured agent ready for NASA document Q&A
+        Configured agent ready for CA DEQ document Q&A
         
     CONVENIENCE FUNCTION BENEFITS:
     - Simplified interface for common use cases
-    - Sensible defaults for NASA Q&A scenarios
+    - Sensible defaults for CA DEQ Q&A scenarios
     - Consistent agent configuration across application
     - Reduced boilerplate code in application entry points
     
     USAGE PATTERNS:
     - Development: include_mcp=True for full feature testing
     - Production: include_mcp based on deployment environment
-    - Testing: include_mcp=False for isolated NASA search testing
+    - Testing: include_mcp=False for isolated CA DEQ search testing
     - Custom Models: model parameter for different AI capabilities
     
     This function is the primary interface for agent creation in most

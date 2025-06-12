@@ -40,13 +40,12 @@ This document details the design and responsibilities of each module in the NASA
   - Exposes configuration via `AppConfig` class.
 - **Key Patterns:** Singleton, Factory, Validation.
 
-### 3.2 `common/nasa_search.py`
-- **Purpose:** NASA document search and RAG (Retrieval-Augmented Generation).
-- **Responsibilities:**
-  - Loads and manages the Chroma vector database.
-  - Embeds and retrieves document chunks.
-  - Synthesizes answers using LLMs.
-- **Key Patterns:** Singleton, Factory, Template Method, Lazy Loading.
+### 3.2 `common/cadeq_search.py`
+- **Purpose:** Implements the `CADEQDocumentSearch` class for vector search and RAG over CA DEQ/CalEPA studies.
+- **Key Functions:**
+  - `CADEQDocumentSearch`: Handles vector DB connection, semantic search, and LLM-based answer generation.
+  - `get_cadeq_search_tool`: Returns a LangChain tool for agent integration.
+  - `get_cadeq_db_info`: Returns metadata about the vector database.
 
 ### 3.3 `common/mcp_client.py`
 - **Purpose:** MCP (Model Context Protocol) integration for external tool access.
@@ -57,12 +56,10 @@ This document details the design and responsibilities of each module in the NASA
 - **Key Patterns:** Adapter, Singleton, Proxy, Factory.
 
 ### 3.4 `common/agent_factory.py`
-- **Purpose:** Factory for creating and configuring AI agents.
-- **Responsibilities:**
-  - Assembles agents with NASA search and optional MCP tools.
-  - Configures model, temperature, and system prompts.
-  - Handles tool integration and error isolation.
-- **Key Patterns:** Factory, Builder, Strategy, Template Method.
+- **Purpose:** Implements the `AgentFactory` for creating agents with CA DEQ and optional MCP tools.
+- **Key Functions:**
+  - `AgentFactory`: Handles agent creation, tool integration, and prompt generation.
+  - `create_cadeq_agent`: Factory function for main application.
 
 ### 3.5 `common/thinking_spinner.py`
 - **Purpose:** Terminal UI spinner for user feedback during processing.
@@ -81,37 +78,34 @@ This document details the design and responsibilities of each module in the NASA
 ## 4. Application Modules
 
 ### 4.1 `main.py`
-- **Role:** Presentation Layer.
-- **Responsibilities:**
-  - Loads configuration.
-  - Creates the agent.
-  - Runs the interactive Q&A loop.
-  - Handles user input and output.
-  - Provides error handling and user feedback.
+- **Purpose:** User interface for Q&A over CA DEQ documents.
+- **Key Functions:**
+  - Loads configuration and agent
+  - Handles user input and displays answers
 
 ### 4.2 `ingest.py`
-- **Role:** Data Layer.
-- **Responsibilities:**
-  - Loads PDF files from the `data/` directory.
-  - Splits documents into chunks.
-  - Embeds chunks and stores them in the Chroma vector DB.
+- **Purpose:** Ingests all CA DEQ PDFs, splits into chunks, and builds Chroma vector DB.
+- **Key Functions:**
+  - Loads all PDFs from `data/`
+  - Splits documents into chunks
+  - Embeds and stores in Chroma DB
 
-### 4.3 `fetch_nasa_data.py`
-- **Role:** Data Acquisition.
-- **Responsibilities:**
-  - Downloads official NASA PDFs into the `data/` directory.
+### 4.3 `fetch_cadeq_data.py`
+- **Purpose:** Downloads 10 CA DEQ/CalEPA studies and reports as PDFs for ingestion.
+- **Key Functions:**
+  - `download_cadeq_documents`: Downloads and saves all source PDFs to the `data/` directory.
 
 ### 4.4 `debug_embeddings.py`
-- **Role:** Diagnostics.
-- **Responsibilities:**
-  - Tests the embedding pipeline.
-  - Verifies OpenAI API connectivity and embedding quality.
+- **Purpose:** Test and debug scripts for embeddings and retrieval, using CA DEQ/environmental queries.
+- **Key Functions:**
+  - Test embedding pipeline and vector DB
+  - Run sample queries for retrieval validation
 
 ### 4.5 `test_retrieval.py`
-- **Role:** Testing.
-- **Responsibilities:**
-  - Runs sample queries against the vector DB.
-  - Validates retrieval and answer quality.
+- **Purpose:** Test and debug scripts for embeddings and retrieval, using CA DEQ/environmental queries.
+- **Key Functions:**
+  - Test embedding pipeline and vector DB
+  - Run sample queries for retrieval validation
 
 ### 4.6 `test_langchain_mcp.py`
 - **Role:** Integration Testing.
@@ -145,8 +139,8 @@ This document details the design and responsibilities of each module in the NASA
 ## 7. Extensibility
 
 - **Add new document types:** Extend `ingest.py` to support new formats.
-- **Custom prompts:** Update prompt templates in `common/nasa_search.py`.
-- **New tools/integrations:** Add to `common/agent_factory.py` and `common/mcp_client.py`.
+- **Custom prompts:** Update prompt templates in `common/cadeq_search.py`.
+- **New tools/integrations:** Add to `common/mcp_client.py`.
 - **Configuration:** Add new settings to `common/config.py`.
 - **Testing:** Add new test scripts or extend existing ones.
 
@@ -175,7 +169,7 @@ This document details the design and responsibilities of each module in the NASA
 | Presentation      | `main.py`, `common/thinking_spinner.py` | User interaction, feedback, UI                  |
 | Agent             | `common/agent_factory.py`        | Agent creation and configuration                 |
 | Integration       | `common/mcp_client.py`, `mcp_filesystem.py` | MCP tool integration, external access           |
-| Data              | `common/nasa_search.py`, `ingest.py`, `fetch_nasa_data.py` | Document ingestion, search, and retrieval       |
+| Data              | `common/cadeq_search.py`, `ingest.py`, `fetch_cadeq_data.py` | Document ingestion, search, and retrieval       |
 | Configuration     | `common/config.py`               | Environment and application configuration        |
 | Testing/Debugging | `debug_embeddings.py`, `test_retrieval.py`, `test_langchain_mcp.py` | Diagnostics and validation                      |
 
